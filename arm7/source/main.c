@@ -28,60 +28,27 @@
 
 ---------------------------------------------------------------------------------*/
 #include <nds.h>
-#include "../../share/fifotool.h"
 
-unsigned int * SCFG_ROM=	(unsigned int*)0x4004000;
-unsigned int * SCFG_CLK=	(unsigned int*)0x4004004; 
-unsigned int * SCFG_EXT=	(unsigned int*)0x4004008;
+unsigned int * SCFG_ROM=(unsigned int*)0x4004000;
+unsigned int * SCFG_CLK=(unsigned int*)0x4004004; 
+unsigned int * SCFG_EXT=(unsigned int*)0x4004008;
+unsigned int * SCFG_MC=(unsigned int*)0x4004010;
+unsigned int * SCFG_CPUID=(unsigned int*)0x4004D04;
+unsigned int * SCFG_CPUID2=(unsigned int*)0x4004D00;
 
-//---------------------------------------------------------------------------------
-void VblankHandler(void) {
-//---------------------------------------------------------------------------------
-	//Wifi_Update();
-}
-
-
-//---------------------------------------------------------------------------------
-void VcountHandler() {
-//---------------------------------------------------------------------------------
-	inputGetAndSend();
-}
+void VblankHandler(void) { }
+void VcountHandler() { inputGetAndSend(); }
 
 volatile bool exitflag = false;
 
-//---------------------------------------------------------------------------------
-void powerButtonCB() {
-//---------------------------------------------------------------------------------
-	exitflag = true;
-}
+void powerButtonCB() { exitflag = true; }
 
-static void myFIFOValue32Handler(u32 value,void* data)
-{
-  nocashMessage("myFIFOValue32Handler");
-
-  nocashMessage("default");
-  nocashMessage("fifoSendValue32");
-  fifoSendValue32(FIFO_USER_02,*((unsigned int*)value));	
-
-}
+static void myFIFOValue32Handler(u32 value,void* data) { fifoSendValue32(FIFO_USER_02,*((unsigned int*)value)); }
 
 //---------------------------------------------------------------------------------
 int main() {
 //---------------------------------------------------------------------------------
-	// SCFG_EXT
-	// 0x92A00000 : NTR
-	// 0x93FFFF07 : TWL
-	// 0x93FF0F07 : max accessible in NTR mode
-	*SCFG_EXT = 0x93FFFF07;
 	
-	// SCFG_CLK
-	// 0x0180 : NTR
-	// 0x0187 : TWL
-	// 
-	*SCFG_CLK = 0x0187;
-	
-    nocashMessage("ARM7 main.c main");
-	// clear sound registers
 	dmaFillWords(0, (void*)0x04000400, 0x100);
 
 	REG_SOUNDCNT |= SOUND_ENABLE;
@@ -92,18 +59,15 @@ int main() {
 	ledBlink(0);
 
 	irqInit();
-	// Start the RTC tracking IRQ
+
 	initClockIRQ();
 	fifoInit();
 
-	//mmInstall(FIFO_MAXMOD);
 
 	SetYtrigger(80);
 
-	//installWifiFIFO();
 	installSoundFIFO();
 
-    nocashMessage("ARM7 main.c installSystemFIFO()");
 	installSystemFIFO();
 
 	irqSet(IRQ_VCOUNT, VcountHandler);
@@ -112,24 +76,13 @@ int main() {
 	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);
 
 	setPowerButtonCB(powerButtonCB);	
-	
-
-	
-	//unsigned int * SCFG_ROM=			(unsigned int*)0x4004000;
-	//unsigned int * SCFG_EXT=			(unsigned int*)0x4004008;
-	//unsigned int * SCFG_ROM_ARM7_COPY=	(unsigned int*)0x2370000;
-	//unsigned int * SCFG_EXT_ARM7_COPY=  (unsigned int*)0x2370008;
-	//*SCFG_ROM_ARM7_COPY = *SCFG_ROM;
-	//*SCFG_EXT_ARM7_COPY = *SCFG_EXT;
-	
+		
 	fifoSetValue32Handler(FIFO_USER_01,myFIFOValue32Handler,0);
 	
-	//fifoSendValue32(FIFO_USER_01,MSG_SCFG_READY);
-	
-
 	// Keep the ARM7 mostly idle
 	while (1) {
 		swiWaitForVBlank();
 	}
 	return 0;
 }
+
