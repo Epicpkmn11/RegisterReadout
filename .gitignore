@@ -3,6 +3,8 @@
 *.lo
 *.o
 *.obj
+*.d
+*.map
 
 # Precompiled Headers
 *.gch
@@ -30,3 +32,6 @@
 *.elf
 *.cia
 *.nds
+
+# OS Files
+*.DS_Store
