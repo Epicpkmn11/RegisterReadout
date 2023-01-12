@@ -17,6 +17,18 @@ unsigned int * SCFG_MC=(unsigned int*)0x4004010;
 unsigned int * SCFG_CPUID=(unsigned int*)0x4004D04;
 unsigned int * SCFG_CPUID2=(unsigned int*)0x4004D00;
 
+struct AutoloadInfo {
+	char autoloadId[4]; // "TLNC"
+	u8 unknown; // 0x01
+	u8 length; // 0x18
+	u16 crc;
+	u64 oldTid;
+	u64 newTid;
+	u32 flags; // 0x17
+	u32 unused;
+	char unused2[0xE0];
+};
+
 //---------------------------------------------------------------------------------
 void dopause() {
 //---------------------------------------------------------------------------------
@@ -29,6 +41,24 @@ void dopause() {
 		swiWaitForVBlank();
 	}
 	scanKeys();
+}
+
+//---------------------------------------------------------------------------------
+void reboot(u64 tid) {
+//---------------------------------------------------------------------------------
+	AutoloadInfo *autoloadInfo = (AutoloadInfo *)0x02000300;
+	memset(autoloadInfo, 0, sizeof(AutoloadInfo));
+	memcpy(autoloadInfo->autoloadId, "TLNC", 4);
+	autoloadInfo->unknown = 0x01;
+	autoloadInfo->length = 0x18;
+	autoloadInfo->oldTid = tid;
+	autoloadInfo->newTid = tid;
+	autoloadInfo->flags = 0x17;
+	autoloadInfo->crc = swiCRC16(0xFFFF, &autoloadInfo->oldTid, 0x18);
+
+	fifoSendValue32(FIFO_USER_02, 1);
+	while(1)
+		swiWaitForVBlank();
 }
 
 //---------------------------------------------------------------------------------
@@ -119,6 +149,9 @@ int main(void) {
 	iprintf( " \n" );
 	iprintf( " \n" );
 	dopauseExit();
+
+	reboot(0x00030005484E494A); // DSi Camera (J) -- 00030005-HNIJ
+
 	return 0;
 }
 
